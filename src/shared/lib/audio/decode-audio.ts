@@ -1,9 +1,9 @@
-export const WHISPER_SAMPLE_RATE = 16_000;
+export const SPEECH_SAMPLE_RATE = 16_000;
 
-/** Decodes the audio track of a media file into 16 kHz mono PCM, as Whisper expects. */
+/** Decodes the audio track of a media file into 16 kHz mono PCM, as speech models expect. */
 export async function decodeAudio(file: File): Promise<Float32Array> {
   const buffer = await file.arrayBuffer();
-  const ctx = new AudioContext({ sampleRate: WHISPER_SAMPLE_RATE });
+  const ctx = new AudioContext({ sampleRate: SPEECH_SAMPLE_RATE });
   try {
     const audio = await ctx.decodeAudioData(buffer);
     if (audio.numberOfChannels === 1) return audio.getChannelData(0);

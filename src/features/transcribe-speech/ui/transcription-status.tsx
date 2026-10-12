@@ -17,7 +17,7 @@ function useElapsedSeconds(since: number | null) {
 }
 
 export function TranscriptionStatus() {
-  const { status, modelProgress, startedAt, duration } = useTranscriptionStore();
+  const { status, modelProgress, progress, startedAt, duration } = useTranscriptionStore();
   const elapsed = useElapsedSeconds(startedAt);
 
   if (status === "idle") return null;
@@ -32,10 +32,12 @@ export function TranscriptionStatus() {
         </>
       )}
       {status === "transcribing" && (
-        <span>
-          Распознаю речь… прошло {formatClock(elapsed)}, длина видео {formatClock(duration)}. Это может занять
-          несколько минут.
-        </span>
+        <>
+          <span>
+            Распознаю речь… {progress.toFixed(0)}% · прошло {formatClock(elapsed)}, длина видео {formatClock(duration)}
+          </span>
+          <Progress value={progress} className="h-1" />
+        </>
       )}
     </div>
   );

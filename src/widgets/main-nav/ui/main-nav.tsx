@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LibraryIcon, PlayIcon } from "lucide-react";
+import { AudioLinesIcon, LibraryIcon, PlayIcon } from "lucide-react";
 import { cn } from "@/shared/lib/utils";
 
 const LINKS = [
   { href: "/", label: "Плеер", icon: PlayIcon },
   { href: "/library", label: "Видеотека", icon: LibraryIcon },
+  { href: "/transcribe", label: "Распознавание", icon: AudioLinesIcon },
 ] as const;
 
 export function MainNav() {

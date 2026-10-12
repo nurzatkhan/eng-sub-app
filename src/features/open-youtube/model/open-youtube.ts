@@ -38,17 +38,16 @@ async function loadCaptions(videoId: string) {
       return;
     }
     const code = e instanceof YoutubeCaptionsRequestError ? e.code : "upstream";
-    toast.error(
-      code === "no-english-captions"
-        ? "У этого видео нет английских субтитров"
-        : code === "unavailable"
-          ? "Видео недоступно"
-          : "Не удалось загрузить субтитры с YouTube",
-      {
-        id: toastId,
-        description: code === "no-english-captions" ? "Можно загрузить свой файл .srt / .vtt" : undefined,
-      },
-    );
+    const messages: Record<string, [string, string?]> = {
+      "no-english-captions": ["У этого видео нет английских субтитров", "Можно загрузить свой файл .srt / .vtt"],
+      blocked: [
+        "YouTube не отдаёт субтитры серверу сайта",
+        "YouTube блокирует запросы с облачных серверов. Запустите приложение локально (pnpm dev) или загрузите свой .srt / .vtt",
+      ],
+      unavailable: ["Видео недоступно"],
+    };
+    const [title, description] = messages[code] ?? ["Не удалось загрузить субтитры с YouTube"];
+    toast.error(title, { id: toastId, description, duration: code === "blocked" ? 12_000 : undefined });
   } finally {
     if (pending === controller) pending = null;
   }

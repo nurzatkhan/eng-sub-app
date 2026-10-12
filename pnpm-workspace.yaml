@@ -1,3 +1,6 @@
 allowBuilds:
+  # transformers.js runs in the browser (onnxruntime-web); the native Node runtime isn't needed
+  onnxruntime-node: false
+  protobufjs: false
   sharp: false
   unrs-resolver: false

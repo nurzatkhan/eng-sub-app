@@ -19,7 +19,7 @@ type PlayerResponse = {
 /** Expected failures are returned, not thrown: errors lose their class when crossing a "use cache" boundary. */
 export type YoutubeCaptionsResult =
   | { ok: true; captions: YoutubeCaptions }
-  | { ok: false; code: "unavailable" | "no-english-captions"; message: string };
+  | { ok: false; code: "unavailable" | "blocked" | "no-english-captions"; message: string };
 
 /** Throws only on network/upstream errors, so those aren't cached. */
 export async function getYoutubeCaptions(videoId: string): Promise<YoutubeCaptionsResult> {
@@ -34,6 +34,10 @@ export async function getYoutubeCaptions(videoId: string): Promise<YoutubeCaptio
   if (!res.ok) throw new Error(`YouTube responded ${res.status}`);
   const player = (await res.json()) as PlayerResponse;
 
+  // YouTube asks datacenter IPs (e.g. Vercel) to "sign in to confirm you're not a bot"
+  if (player.playabilityStatus?.status === "LOGIN_REQUIRED") {
+    return { ok: false, code: "blocked", message: player.playabilityStatus.reason ?? "Blocked by YouTube" };
+  }
   if (player.playabilityStatus?.status !== "OK") {
     return { ok: false, code: "unavailable", message: player.playabilityStatus?.reason ?? "Video is unavailable" };
   }
