@@ -1,36 +1,102 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# English Subs
 
-## Getting Started
+Смотрите видео на английском: субтитры справа, клик по любому слову ставит видео на паузу и показывает перевод.
 
-First, run the development server:
+- **Видеотека** (`/library`): 55 видео по уровням CEFR — A1 (5), A2 (30), B1–C2 (по 5), у всех ручные английские субтитры. Клик открывает видео в плеере (`/?v=<id>` — ссылкой можно поделиться).
+- **YouTube:** перетащите ссылку из другой вкладки, вставьте её (Ctrl/⌘ + V) в любом месте страницы или в поле в шапке. Видео играет во встроенном плеере YouTube, английские субтитры подгружаются автоматически (сначала ручные, если их нет — автоматические).
+- Свои видео открываются локально в браузере и никуда не загружаются.
+- Субтитры загружаются из `.srt`/`.vtt` или распознаются из видео прямо в браузере (Whisper через transformers.js).
+- **Перевод слов офлайн и мгновенно:** при наведении на слово сразу видно перевод, по клику — карточка с вариантами по частям речи. Словари EN → ru / kk / uk / uz / ky / tr собраны из Wiktionary и лежат в `public/dictionaries`; формы слов распознаются (ran → run, minutes → minute).
+- **Перевод строки под видео** с подсветкой соответствующих слов при наведении (как в Яндекс Переводчике); следующие строки переводятся заранее. Включается/выключается кнопкой справа от строки.
+- **Перевод фраз** по цепочке: встроенный переводчик Chrome (Translator API, на устройстве, Chrome 138+) → локальная модель Opus-MT в браузере (ru, uk; ~110 МБ, скачивается один раз) → Google как последний вариант.
+- Произношение (синтез речи браузера).
+- Свой словарь с экспортом в CSV (например, для Anki).
+- **Горячие клавиши** (работают в любой раскладке, полный список — клавиша `?`):
+  - `Пробел` / `K` — пауза; `A` `D` — предыдущая / следующая строка; `←` `→` — по словам строки с переводом; `R` — повторить строку; `Shift+←/→` — ±5 с
+  - `<` `>` — скорость; `P` — пауза после каждой строки; `L` — повтор строки по кругу; `T` — перевод строки
+  - `S` — сохранить открытое слово; `/` — вставить ссылку YouTube; `Esc` — закрыть
+
+## Запуск
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
+pnpm dev        # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Проверки:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm typecheck
+pnpm lint       # ESLint
+pnpm lint:fsd   # Steiger: проверка архитектуры FSD
+pnpm build
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Пересобрать словари (скачает ~520 МБ дамп Wiktionary с kaikki.org, ~1 минута):
 
-## Learn More
+```bash
+pnpm build:dictionaries                      # или: pnpm build:dictionaries ./english.jsonl.gz
+```
 
-To learn more about Next.js, take a look at the following resources:
+Обновить видеотеку (ищет видео на YouTube и проверяет встраивание и субтитры, ~2 минуты):
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+pnpm build:catalog
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Стек
 
-## Deploy on Vercel
+Next.js 16 (App Router, Turbopack, Cache Components) · React 19 · TypeScript · Tailwind CSS 4 · shadcn/ui (Radix) · Zustand · TanStack Query · Feature-Sliced Design
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Структура (FSD)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+app/                    # роутинг Next.js — тонкий слой, только реэкспорт из src
+  api/translate/        # прокси к Google Translate с серверным кэшем ("use cache")
+  api/youtube/captions/ # английские субтитры YouTube-видео
+pages/README.md         # пустая папка, чтобы Next не считал src/pages роутером Pages
+public/workers/         # web worker распознавания речи (Whisper)
+src/
+  app/                  # провайдеры (Query, Theme, Tooltip, Toaster), глобальные стили
+  pages/player/         # страница плеера: собирает виджеты
+  pages/library/        # видеотека по уровням
+  widgets/
+    app-header/         # тулбар
+    video-player/       # видео, drag-and-drop, текущая строка под видео
+    subtitles-panel/    # список субтитров с подсветкой и автопрокруткой
+    vocabulary-panel/   # «Мои слова»
+    word-lookup-popover/# карточка перевода по клику
+    word-hover-hint/    # мгновенная подсказка при наведении
+  features/
+    open-youtube/  upload-video/  upload-subtitles/  transcribe-speech/  export-subtitles/
+    select-language/  word-lookup/  save-word/  player-hotkeys/
+  entities/
+    media/              # источник (файл / YouTube) и общий PlayerController
+    subtitle/           # Cue, парсинг SRT/VTT, токенизация, <SubtitleText>
+    word/               # словарь (сохраняется в localStorage)
+    video/              # каталог видеотеки (config/catalog.json), уровни CEFR, строка видео
+    translation/        # язык, офлайн-словарь (поиск с формами слов), перевод фраз
+  shared/
+    ui/                 # компоненты shadcn/ui
+    api/                # клиент перевода (+ серверная часть google.server.ts)
+    config/  lib/
+```
+
+Правило импортов: слой может импортировать только из слоёв ниже (`app → pages → widgets → features → entities → shared`), а слайсы — только через `index.ts`. Это проверяет `pnpm lint:fsd`.
+
+Новые компоненты shadcn сразу попадают в `src/shared/ui` (см. `components.json`):
+
+```bash
+pnpm dlx shadcn@latest add dialog
+```
+
+## Ограничения
+
+- Подсветка соответствий строится по офлайн-словарю, а не самим переводчиком: если переводчик выбрал слово, которого нет среди словарных значений, пара не подсветится.
+- Google Translate (бесплатный эндпоинт без ключа) — только запасной вариант: при частых запросах он отвечает 429 и блокирует IP на время.
+- В казахском, киргизском и узбекском словарях заметно меньше слов (6–10 тыс. против 57 тыс. в русском): так в Wiktionary. Слова, которых нет в словаре, переводятся переводчиком Chrome или Google.
+- Распознавание речи при первом запуске скачивает модель (~150 МБ), затем она кэшируется браузером. На длинных видео распознавание занимает несколько минут; результат лучше сохранить кнопкой «.srt».
+- Субтитры YouTube берутся через внутренний API YouTube (innertube, клиент Android) — он не документирован. Если субтитры перестали загружаться, скорее всего нужно обновить версию клиента в `src/shared/api/youtube/captions.server.ts`.
+- Для YouTube «Распознать речь» недоступно: браузер не даёт доступа к звуку встроенного плеера. Если у видео нет английских субтитров, можно загрузить свой `.srt`.
+- Некоторые авторы запрещают встраивать видео — такие YouTube не покажет во встроенном плеере.
+- Браузер может не открыть `.mkv` — лучше `.mp4` / `.webm`.
